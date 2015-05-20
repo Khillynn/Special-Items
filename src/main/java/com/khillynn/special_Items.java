@@ -6,6 +6,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -27,34 +28,58 @@ public class special_Items extends JavaPlugin implements Listener {
             Location loc = e.getLocation();
 
 
+            //if there is white wool under TNT then 5 stacks of FEATHERS will be dropped upon detonation
             if (loc.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.WOOL) && loc.getBlock().getRelative(BlockFace.DOWN).getData() == DyeColor.WHITE.getWoolData()) {
-                e.blockList().clear();
-                loc.getWorld().dropItem(loc, new ItemStack(Material.FEATHER, 64));
+                e.setCancelled(true);
+                e.getLocation().getWorld().createExplosion(loc, 0.0F);
+                for(int stackNum = 1; stackNum <= 5; stackNum++)
+                    loc.getWorld().dropItem(loc, new ItemStack(Material.FEATHER, 64));
             }
 
+            //if there is red wool under TNT then 5 stacks of ROTTEN FLESH will be dropped upon detonation
             if (loc.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.WOOL) && loc.getBlock().getRelative(BlockFace.DOWN).getData() == DyeColor.RED.getWoolData()) {
-                e.blockList().clear();
-                loc.getWorld().dropItem(loc, new ItemStack(Material.ROTTEN_FLESH, 64));
+                e.setCancelled(true);
+                e.getLocation().getWorld().createExplosion(loc, 0.0F);
+                for(int stackNum = 1; stackNum <= 5; stackNum++)
+                    loc.getWorld().dropItem(loc, new ItemStack(Material.ROTTEN_FLESH, 64));
             }
 
+            //if there is orange wool under TNT then a ton of FIREWORKS will be spawned upon detonation
             if (loc.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.WOOL) && loc.getBlock().getRelative(BlockFace.DOWN).getData() == DyeColor.ORANGE.getWoolData()) {
-                e.blockList().clear();
-                for (int x = 1; x < 5; x++) {
-                    for (int y = 1; y < 4; y++){
+                e.setCancelled(true);
+                e.getLocation().getWorld().createExplosion(loc, 0.0F);
+                //only 15 can be rendered by the client so..
+                for (int x = 1; x <= 5; x++) {
+                    for (int y = 1; y < 5; y++){
                         loc.getWorld().spawn(loc, Firework.class);
                     }
-                    for (int y = 1; y < 4; y++){
+                    for (int y = 1; y < 5; y++){
                         loc.getWorld().spawn(loc, Firework.class);
                     }
-                    for (int y = 1; y < 4; y++){
+                    for (int y = 1; y < 5; y++){
                         loc.getWorld().spawn(loc, Firework.class);
                     }
                 }
             }
+
+            //if there is green wool under TNT then 5 CREEPERS will be spawned upon detonation
+            if (loc.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.WOOL) && loc.getBlock().getRelative(BlockFace.DOWN).getData() == DyeColor.GREEN.getWoolData()) {
+                e.setCancelled(true);
+                e.getLocation().getWorld().createExplosion(loc, 0.0F);
+                for(int creeperNum = 1; creeperNum <= 5; creeperNum++)
+                    loc.getWorld().spawnEntity(loc, EntityType.CREEPER);
+            }
         }
     }
 
-    //allows for a type of armor to keep the player from being burned by fire or lava, also allows a type of armor to act as longfall boots
+    //this prevents dropped items from being destroyed by TNT
+    @EventHandler
+    public void onDroppedItemDamagedByTNT (EntityDamageByEntityEvent e) {
+        if(e.getEntityType().equals(EntityType.DROPPED_ITEM) && e.getDamager() instanceof TNTPrimed)
+            e.setCancelled(true);
+    }
+
+    //allows for a type of armor (IRON in this case) to keep the player from being burned by fire or lava, also allows a type of armor to act as longfall boots
     @EventHandler
     public void onPlayerInLava (EntityDamageEvent e){
         if (e.getEntity() instanceof Player) {
@@ -73,6 +98,15 @@ public class special_Items extends JavaPlugin implements Listener {
                 }
             }
         }
+    }
+
+    //prevents damage to tamed wolves and ocelots
+    @EventHandler
+    public void onPetDamage (EntityDamageEvent e){
+        if((e.getEntity() instanceof Wolf) && ((Wolf) e.getEntity()).isTamed())
+            e.setCancelled(true);
+        if(e.getEntity() instanceof Ocelot && ((Ocelot) e.getEntity()).isTamed())
+            e.setCancelled(true);
     }
 
     /* This will set a 3x3 area of water to ice when walked on. Seems best to run and jump across
@@ -118,7 +152,7 @@ public class special_Items extends JavaPlugin implements Listener {
         if (e.getEntity() instanceof Egg){
             Location loc = e.getEntity().getLocation();
             World world = e.getEntity().getWorld();
-            world.playEffect(loc, Effect.STEP_SOUND, 50);
+            world.playEffect(loc, Effect.STEP_SOUND, 100);
             world.createExplosion(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), 3.0F, false, false);
         }
     }
